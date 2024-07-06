@@ -7,7 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -20,9 +24,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void addUser(User user) {
+    public void add(User user) {
+        Optional<User> hasEmail = userRepository.findByEmail(user.getEmail());
+        if (hasEmail.isPresent())
+        {
+            throw new RuntimeException("User already exists");
+        }
         userRepository.save(user);
-        sendConfirmationEmail(user.getEmail());
+    }
+
+    @Override
+    public Optional<User> getUserById(int id) {
+        return userRepository.findById(id);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email or password "));
     }
 
     private void sendConfirmationEmail(String userEmail) {
